@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VolSurf • Heston Volatility Engine</title>
+    <meta name="description"
+        content="Production-grade volatility surface calibration for NIFTY 50 options using the Heston stochastic volatility model">
+    <meta name="author" content="Aman Mohammed">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="VolSurf - Heston Volatility Engine">
+    <meta property="og:description" content="Real-time volatility surface calibration for NIFTY 50 options">
+    <meta property="og:type" content="website">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- KaTeX for Math -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+
+    <!-- Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <!-- 3D Background Canvas -->
+    <canvas id="three-canvas"></canvas>
+
+    <!-- Main Container -->
+    <div class="main-container">
+
+        <!-- Hero Section -->
+        <header class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="pulse"></span>
+                    Live Market Data
+                </div>
+                <h1 class="hero-title">
+                    <span class="gradient-text">VolSurf</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Calibrate. Price. Trade.
+                </p>
+                <p class="hero-description">
+                    Volatility surface calibration for NIFTY 50 options.<br>
+                    Find fair value. Spot mispricings. Extract edge.
+                </p>
+
+                <!-- Mathematical Equations -->
+                <div class="equations-container">
+                    <div class="equation" id="eq1">
+                        <div class="equation-label">Asset Dynamics</div>
+                        <div class="equation-content">$$dS_t = \mu S_t \, dt + \sqrt{v_t} \, S_t \, dW_t^S$$</div>
+                    </div>
+                    <div class="equation" id="eq2">
+                        <div class="equation-label">Stochastic Variance</div>
+                        <div class="equation-content">$$dv_t = \kappa(\theta - v_t) \, dt + \sigma \sqrt{v_t} \,
+                            dW_t^v$$</div>
+                    </div>
+                </div>
+
+                <a href="#dashboard" class="cta-button">
+                    <span>Launch Dashboard</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M19 12l-7 7-7-7" />
+                    </svg>
+                </a>
+            </div>
+        </header>
+
+        <!-- Dashboard Section -->
+        <main id="dashboard" class="dashboard">
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-label">Market Status</span>
+                    <span class="status-value" id="market-status">
+                        <span class="status-dot"></span>
+                        Connecting...
+                    </span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Spot Price</span>
+                    <span class="status-value" id="spot-price">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Expiry</span>
+                    <span class="status-value" id="expiry-date">--</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Time to Expiry</span>
+                    <span class="status-value" id="time-to-expiry">--</span>
+                </div>
+                <div class="status-item model-scope">
+                    <span class="status-label">Model Scope</span>
+                    <span class="status-value" id="model-scope">ATM ± 7%</span>
+                </div>
+            </div>
+
+            <!-- Main Grid -->
+            <div class="dashboard-grid">
+
+                <!-- Parameters Card -->
+                <section class="card parameters-card">
+                    <div class="card-header">
+                        <h2>Calibrated Parameters</h2>
+                        <button class="btn-calibrate" id="btn-calibrate">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <path d="M21 12a9 9 0 11-9-9" />
+                            </svg>
+                            Calibrate
+                        </button>
+                    </div>
+
+                    <div class="parameters-grid">
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-symbol">v₀</span>
+                                <span class="param-name">Initial Variance</span>
+                            </div>
+                            <div class="param-value" id="param-v0">--</div>
+                            <div class="param-vol" id="param-v0-vol">σ₀ = --</div>
+                        </div>
+
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-symbol">κ</span>
+                                <span class="param-name">Mean Reversion</span>
+                            </div>
+                            <div class="param-value" id="param-kappa">--</div>
+                            <div class="param-description">Speed of variance reversion</div>
+                        </div>
+
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-symbol">θ</span>
+                                <span class="param-name">Long-term Variance</span>
+                            </div>
+                            <div class="param-value" id="param-theta">--</div>
+                            <div class="param-vol" id="param-theta-vol">σ∞ = --</div>
+                        </div>
+
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-symbol">σ</span>
+                                <span class="param-name">Vol of Vol</span>
+                            </div>
+                            <div class="param-value" id="param-sigma">--</div>
+                            <div class="param-description">Volatility of volatility</div>
+                        </div>
+
+                        <div class="param-item">
+                            <div class="param-header">
+                                <span class="param-symbol">ρ</span>
+                                <span class="param-name">Correlation</span>
+                            </div>
+                            <div class="param-value" id="param-rho">--</div>
+                            <div class="param-bar">
+                                <div class="param-bar-fill" id="rho-bar"></div>
+                            </div>
+                        </div>
+
+                        <div class="param-item highlight">
+                            <div class="param-header">
+                                <span class="param-symbol">ℒ</span>
+                                <span class="param-name">Calibration Loss</span>
+                            </div>
+                            <div class="param-value" id="param-loss">--</div>
+                            <div class="param-description" id="calibration-status">Not calibrated</div>
+                        </div>
+                    </div>
+
+                    <!-- Feller Condition -->
+                    <div class="feller-condition">
+                        <span class="feller-label">Feller Condition: 2κθ > σ²</span>
+                        <span class="feller-value" id="feller-check">--</span>
+                    </div>
+                </section>
+
+                <!-- Volatility Smile Chart -->
+                <section class="card chart-card">
+                    <div class="card-header">
+                        <h2>Volatility Smile</h2>
+                        <div class="chart-legend">
+                            <span class="legend-item legend-market">● Market IV</span>
+                            <span class="legend-item legend-model">— Heston Model</span>
+                        </div>
+                    </div>
+                    <div id="smile-chart" class="chart-container"></div>
+                </section>
+
+                <!-- Options Data Table -->
+                <section class="card table-card">
+                    <div class="card-header">
+                        <h2>Option Chain (Filtered)</h2>
+                        <span class="data-count" id="options-count">0 options</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Strike</th>
+                                    <th>Moneyness</th>
+                                    <th>CE Price</th>
+                                    <th>Market IV</th>
+                                    <th>Model IV</th>
+                                    <th>Error</th>
+                                </tr>
+                            </thead>
+                            <tbody id="options-table-body">
+                                <tr>
+                                    <td colspan="6" class="loading-cell">Loading market data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- Analysis Insights Section -->
+            <section class="card insights-card" id="insights-section" style="display: none;">
+                <div class="card-header">
+                    <h2>Market Analysis</h2>
+                </div>
+                <div class="insights-content" id="insights-content">
+                    <!-- Populated by JavaScript after calibration -->
+                </div>
+            </section>
+
+            <!-- Technical Details -->
+            <section class="card tech-card">
+                <div class="card-header">
+                    <h2>Technical Implementation</h2>
+                </div>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-icon">∫</div>
+                        <h3>COS Fourier Pricing</h3>
+                        <p>Fang-Oosterlee (2008) cosine expansion. 300x faster than quadrature with exponential
+                            convergence.</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">∇</div>
+                        <h3>LM Optimization</h3>
+                        <p>Levenberg-Marquardt with Trust Region. Vega-weighted residuals for ATM stability.</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">φ</div>
+                        <h3>Characteristic Function</h3>
+                        <p>$$\phi(u) = e^{C + Dv_0 + iu\ln S}$$</p>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">Σ</div>
+                        <h3>Calibration Loss</h3>
+                        <p>$$\mathcal{L} = \sum_i w_i \left(\sigma_i^{model} - \sigma_i^{mkt}\right)^2$$</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>Built with Python • FastAPI • Three.js • Plotly</p>
+                <div class="footer-links">
+                    <a href="https://github.com/Amanmohammed1" target="_blank">GitHub</a>
+                    <a href="https://www.linkedin.com/in/aman-mohammed-2182b51b9/" target="_blank">LinkedIn</a>
+                </div>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="loader">
+            <div class="loader-ring"></div>
+            <span class="loader-text">Calibrating...</span>
+        </div>
+    </div>
+
+    <script src="js/three-scene.js"></script>
+    <script src="js/main.js"></script>
+    <script>
+        // Initialize KaTeX
+        document.addEventListener('DOMContentLoaded', () => {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    { left: '$$', right: '$$', display: true },
+                    { left: '$', right: '$', display: false }
+                ]
+            });
+        });
+    </script>
+</body>
+
+</html>

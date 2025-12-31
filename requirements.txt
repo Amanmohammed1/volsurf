@@ -1,0 +1,19 @@
+# Core Scientific Computing
+numpy>=1.24.0
+scipy>=1.10.0
+pandas>=2.0.0
+
+# API & Web
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+httpx>=0.24.0
+python-dotenv>=1.0.0
+
+# Data Fetching
+requests>=2.31.0
+
+# Performance (Optional - graceful fallback if unavailable)
+numba>=0.57.0
+
+# Production ASGI Server
+gunicorn>=21.0.0
