@@ -3,8 +3,10 @@
  * Handles API calls, calibration, and chart rendering
  */
 
-// API Configuration - Use window.API_BASE if set, otherwise default to localhost:5001
-const API_BASE = window.API_BASE || 'http://localhost:5001/api';
+// API Configuration - Production uses Railway, local dev uses localhost
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:5001/api'
+    : 'https://web-production-d4bb1.up.railway.app/api';
 
 // State
 let marketData = null;
